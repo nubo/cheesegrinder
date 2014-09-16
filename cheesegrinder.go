@@ -5,9 +5,16 @@ import (
 	"log"
 )
 
+// Subscription is a subscription to a topic. All messages will
+// be pushed to the Messages channel. Close the close-cha
 type Subscription struct {
 	Messages <-chan string
-	Close    chan struct{}
+	c        chan struct{}
+}
+
+// Close unsubscribes from the topic and closes the connection.
+func (s *Subscription) Close() {
+	close(s.c)
 }
 
 // ConnectionFactory is a function which creates a new redis.Conn.
@@ -16,6 +23,7 @@ type Subscription struct {
 // every subscription and give an opportunity to do authentication.
 type ConnectionFactory func() redis.Conn
 
+// Subscribe creates a new subscription to the given topic.
 func Subscribe(f ConnectionFactory, topic string) Subscription {
 	closing := make(chan struct{})
 	msgs := make(chan string)
@@ -71,10 +79,11 @@ func Subscribe(f ConnectionFactory, topic string) Subscription {
 	<-subscribed
 	return Subscription{
 		Messages: msgs,
-		Close:    closing,
+		c:        closing,
 	}
 }
 
+// Publish publishes a single message on the given topic.
 func Publish(c redis.Conn, topic string, msg string) error {
 	_, err := c.Do("PUBLISH", topic, msg)
 	return err

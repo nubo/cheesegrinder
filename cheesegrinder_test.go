@@ -39,7 +39,7 @@ var _ = Describe("Cheesegrinder E2E", func() {
 		expectedMessage := "test message"
 
 		sub := Subscribe(factory, "test")
-		defer closeSubscription(sub)
+		defer sub.Close()
 		go func() {
 			defer GinkgoRecover()
 			err := Publish(conn, "test", expectedMessage)
@@ -54,9 +54,9 @@ var _ = Describe("Cheesegrinder E2E", func() {
 		expectedMessage := "test message"
 
 		sub1 := Subscribe(factory, "test")
-		defer closeSubscription(sub1)
+		defer sub1.Close()
 		sub2 := Subscribe(factory, "test")
-		defer closeSubscription(sub2)
+		defer sub2.Close()
 		go func() {
 			defer GinkgoRecover()
 			err := Publish(conn, "test", expectedMessage)
@@ -99,11 +99,7 @@ var _ = Describe("Cheesegrinder", func() {
 		}
 
 		sub := Subscribe(factory, "test")
-		close(sub.Close)
+		sub.Close()
 		<-closed
 	})
 })
-
-func closeSubscription(s Subscription) {
-	close(s.Close)
-}
