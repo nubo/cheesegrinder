@@ -1,0 +1,19 @@
+{
+	"ImportPath": "github.com/nubo/cheesegrinder",
+	"GoVersion": "go1.3.1",
+	"Deps": [
+		{
+			"ImportPath": "github.com/garyburd/redigo/redis",
+			"Rev": "6628c86d6a89ce7983c7c9b5e98c1df795fbd256"
+		},
+		{
+			"ImportPath": "github.com/onsi/ginkgo",
+			"Comment": "v1.0.0-23-g939c01c",
+			"Rev": "939c01cdcec896f69e7e0e5787934e32972419be"
+		},
+		{
+			"ImportPath": "github.com/onsi/gomega",
+			"Rev": "efd113280743f90026f1dc18b93ca5355d8df0bf"
+		}
+	]
+}
