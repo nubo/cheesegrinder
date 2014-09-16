@@ -20,33 +20,53 @@ func Subscribe(f ConnectionFactory, topic string) Subscription {
 	running := true
 
 	closing := make(chan struct{})
-	go func() {
-		<-closing
-		running = false
-	}()
-
 	msgs := make(chan string)
 	subscribed := make(chan struct{})
+	rawmsgs := make(chan interface{})
+
 	go func() {
 		psc := redis.PubSubConn{f()}
 		defer psc.Close()
 		psc.Subscribe(topic)
 		defer psc.Unsubscribe(topic)
+
+		go func() {
+			defer close(rawmsgs)
+			for running {
+				rawmsg := psc.Receive()
+				rawmsgs <- rawmsg
+			}
+		}()
+		<-closing
+		running = false
+	}()
+
+	go func() {
 		for running {
-			rawmsg := psc.Receive()
-			switch msg := rawmsg.(type) {
-			case redis.Subscription:
-				close(subscribed)
-			case redis.Message:
-				select {
-				case msgs <- string(msg.Data):
-				case <-closing:
+			var plainMsg []byte
+			select {
+			case rawmsg := <-rawmsgs:
+				switch msg := rawmsg.(type) {
+				case redis.Subscription:
+					close(subscribed)
+					continue
+				case redis.Message:
+					plainMsg = msg.Data
+				case error:
+					log.Printf("Error: %s", msg)
+					return
+				default:
+					log.Printf("Unknown type %#v", rawmsg)
+					continue
 				}
-			case error:
-				log.Printf("Error: %s", msg)
+			case <-closing:
 				return
-			default:
-				log.Printf("Unknown type %#v", rawmsg)
+			}
+
+			select {
+			case msgs <- string(plainMsg):
+			case <-closing:
+				return
 			}
 		}
 	}()
