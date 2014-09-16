@@ -17,8 +17,6 @@ type Subscription struct {
 type ConnectionFactory func() redis.Conn
 
 func Subscribe(f ConnectionFactory, topic string) Subscription {
-	running := true
-
 	closing := make(chan struct{})
 	msgs := make(chan string)
 	subscribed := make(chan struct{})
@@ -32,17 +30,16 @@ func Subscribe(f ConnectionFactory, topic string) Subscription {
 
 		go func() {
 			defer close(rawmsgs)
-			for running {
+			for {
 				rawmsg := psc.Receive()
 				rawmsgs <- rawmsg
 			}
 		}()
 		<-closing
-		running = false
 	}()
 
 	go func() {
-		for running {
+		for {
 			var plainMsg []byte
 			select {
 			case rawmsg := <-rawmsgs:

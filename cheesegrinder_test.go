@@ -76,7 +76,7 @@ var _ = Describe("Cheesegrinder E2E", func() {
 
 var _ = Describe("Cheesegrinder", func() {
 	It("should close the underlying connection on close", func() {
-		closed := false
+		closed := make(chan struct{})
 		subscribed := false
 		mock := RedisMock{
 			SendFunc: func(cmdName string, args ...interface{}) error {
@@ -90,7 +90,7 @@ var _ = Describe("Cheesegrinder", func() {
 				return []interface{}{[]byte("subscribe"), []byte("test"), int64(1)}, nil
 			},
 			CloseFunc: func() error {
-				closed = true
+				close(closed)
 				return nil
 			},
 		}
@@ -100,9 +100,7 @@ var _ = Describe("Cheesegrinder", func() {
 
 		sub := Subscribe(factory, "test")
 		close(sub.Close)
-		Eventually(func() bool {
-			return closed
-		}).Should(BeTrue())
+		<-closed
 	})
 })
 
